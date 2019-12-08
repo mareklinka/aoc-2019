@@ -13,6 +13,8 @@ namespace _06
         {
             var file = File.ReadAllLines("input.txt");
             var count = CountOrbits(file);
+
+            Assert.Equal(139597, count);
         }
 
         [Fact]
@@ -20,6 +22,8 @@ namespace _06
         {
             var file = File.ReadAllLines("input.txt");
             var count = CountOrbitalTransfers(file);
+
+            Assert.Equal(286, count);
         }
 
         [Fact]
@@ -114,7 +118,6 @@ namespace _06
             var lines = orbitLines.Select(_ => _.Split(")")).ToArray();
 
             var satellites = new Dictionary<string, List<string>>();
-            var centers = new Dictionary<string, string>();
             var objects = new HashSet<string>();
 
             foreach (var l in lines)
@@ -130,28 +133,34 @@ namespace _06
                 {
                     satellites.Add(l[0], new List<string> { l[1] });
                 }
-
-                centers.Add(l[1], l[0]);
             }
 
             var count = 0;
 
-            foreach (var satellite in objects)
+            var objectQ = new Queue<string>();
+            var distanceQ = new Queue<int>();
+
+            objectQ.Enqueue("COM");
+            distanceQ.Enqueue(0);
+
+            while (objectQ.Any())
             {
-                count += CountOrbitsCore(satellite, centers);
+                var obj = objectQ.Dequeue();
+                var distance = distanceQ.Dequeue();
+
+                count += distance;
+
+                if (satellites.TryGetValue(obj, out var sats))
+                {
+                    foreach (var sat in sats)
+                    {
+                        objectQ.Enqueue(sat);
+                        distanceQ.Enqueue(distance + 1);
+                    }
+                }
             }
 
             return count;
-        }
-
-        private int CountOrbitsCore(string satellite, Dictionary<string, string> centers)
-        {
-            if (!centers.TryGetValue(satellite, out var center))
-            {
-                return 0;
-            }
-
-            return 1 + CountOrbitsCore(center, centers);
         }
     }
 }
