@@ -75,17 +75,6 @@ namespace _18
         }
 
         [Theory]
-        [InlineData("input_small.txt", "a")]
-        [InlineData("input_small2.txt", "ab")]
-        public void TestReachableKeys(string file, string expected)
-        {
-            var lines = File.ReadAllLines(file);
-
-            var reachable = ReachableKeys(lines, FindPositionOf('@', lines), string.Empty);
-            Assert.Equal(expected, new string(reachable.Select(_ => _.Key).ToArray()));
-        }
-
-        [Theory]
         [InlineData("input_small.txt", 86)]
         [InlineData("input_small2.txt", 132)]
         public void TestCollectKeys(string file, int expected)
