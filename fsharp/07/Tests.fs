@@ -1,7 +1,6 @@
 module Tests
 
 open Xunit
-
 open IntComputer
 
 let rec permutations (digits: int list) =
@@ -22,22 +21,14 @@ let WrapInput(list: int64 list) =
         state <- state + 1
         list.[state]
 
-let RunSingleComputer (state: ComputerState) phase input output earlyStopper =
-    match phase with
-    | Some p ->
-        let newState =
-            state.Memory
-            |> ExecuteProgram state.InstructionPointer state.RelativeBase
-                   (WrapInput
-                       [ (p |> int64)
-                         input ]) (fun l -> output := l) earlyStopper
-        newState
-    | None ->
-        let newState =
-            state.Memory
-            |> ExecuteProgram state.InstructionPointer state.RelativeBase (WrapInput [ input ])
-                   (fun l -> output := l) earlyStopper
-        newState
+let RunSingleComputer (state: ComputerState) input output earlyStopper =
+    let inputList = [ !output ] |> List.append input
+    let newState =
+        state.Memory
+        |> ExecuteProgram state.InstructionPointer state.RelativeBase (WrapInput inputList) (fun l -> output := l)
+               earlyStopper
+
+    newState
 
 let RunComputers program (phases: int list) =
     let lastOutput = ref 0L
@@ -48,12 +39,8 @@ let RunComputers program (phases: int list) =
             { ComputerState.Memory = program |> Array.copy
               ComputerState.InstructionPointer = 0
               ComputerState.RelativeBase = 0
-              ComputerState.FullStop = false }
-              (Some(phases.[i]))
-              !lastOutput
-              lastOutput
-              None
-              |> ignore)
+              ComputerState.FullStop = false } ([ phases.[i] |> int64 ]) lastOutput None
+        |> ignore)
 
     !lastOutput
 
@@ -61,18 +48,19 @@ let rec RunFeedbackLoop (states: ComputerState list) firstPass input (phases: in
     let earlyStopper = (Some(fun i -> i = 4L))
     let output = ref input
 
-    match firstPass with
-    | true ->
-        let newStates = [0 .. 4] |> List.map (fun i -> RunSingleComputer states.[i] (Some(phases.[i])) !output output earlyStopper)
+    let inputFunction =
+        (fun i ->
+            match firstPass with
+            | true -> [ phases.[i] |> int64 ]
+            | false -> [])
 
-        RunFeedbackLoop newStates false !output phases
-    | false ->
-        let newStates = [0 .. 4] |> List.map (fun i -> RunSingleComputer states.[i] None !output output earlyStopper)
-        let allFinished = newStates |> List.forall (fun s -> s.FullStop)
+    let newStates =
+        [ 0 .. 4 ] |> List.map (fun i -> RunSingleComputer states.[i] (inputFunction (i)) output earlyStopper)
+    let allFinished = newStates |> List.forall (fun s -> s.FullStop)
 
-        match allFinished with
-        | true -> !output
-        | false -> RunFeedbackLoop newStates false !output phases
+    match allFinished with
+    | true -> !output
+    | false -> RunFeedbackLoop newStates false !output phases
 
 [<Fact>]
 let Part1() =
@@ -109,3 +97,4 @@ let Part2() =
         |> Seq.max
 
     Assert.Equal(27561242L, maxThrust)
+)
