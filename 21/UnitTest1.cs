@@ -70,7 +70,7 @@ namespace _21
             if (output.Any(_ => _ > 128))
             {
                 // success
-                Assert.Equal(19354464, output.Max());
+                Assert.Equal(1143198454, output.Max());
             }
             else
             {
